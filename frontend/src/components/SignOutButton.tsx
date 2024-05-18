@@ -10,7 +10,7 @@ const SignOutButton = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries("validateToken");
       toast.success("Sign Out Sucessful!", {
-        duration: 2000,
+        duration: 5000,
       });
       navigate("/");
     },

@@ -25,7 +25,7 @@ const Register = () => {
     onSuccess: async () => {
       await queryClient.invalidateQueries("validateToken");
       toast.success("Registration Sucessful!", {
-        duration: 2000,
+        duration: 5000,
       });
       navigate("/");
     },
