@@ -31,6 +31,12 @@ app.use(express_1.default.static(path_1.default.join(__dirname, "../../frontend/
 app.use("/api/auth", auth_1.default);
 app.use("/api/users", users_1.default);
 app.use("/api/my-hotels", my_hotels_1.default);
+app.get("*", (req, res) => {
+    res.sendFile(path_1.default.join(__dirname, "../../frontend/dist/index.html"));
+});
+// app.get("*", function (req, res) {
+//   res.status(404).send("what???");
+// });
 app.listen(7001, () => {
     console.log("Server is running on local host:7001");
 });

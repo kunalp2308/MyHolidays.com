@@ -45,13 +45,7 @@ router.post("/", auth_1.default, [
         const imageFiles = req.files;
         const newHotel = req.body;
         //1.upload the image to cloudnary
-        const uplaodPromises = imageFiles.map((image) => __awaiter(void 0, void 0, void 0, function* () {
-            const b64 = Buffer.from(image.buffer).toString("base64");
-            let dataUrl = "data:" + image.mimetype + ";base64," + b64;
-            const res = yield cloudinary_1.default.v2.uploader.upload(dataUrl);
-            return res.url;
-        }));
-        const imageUrls = yield Promise.all(uplaodPromises);
+        const imageUrls = yield uploadImages(imageFiles);
         // if upload was sucessfull add the nurl to the new Hotel
         newHotel.imageUrls = imageUrls;
         newHotel.lastUploaded = new Date();
@@ -68,4 +62,59 @@ router.post("/", auth_1.default, [
         });
     }
 }));
+router.get("/", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const hotels = yield hotel_1.default.find({ userId: req.userId });
+        res.json(hotels);
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error fetching hotels" });
+    }
+}));
+router.get("/:id", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const id = req.params.id.toString();
+    try {
+        const hotel = yield hotel_1.default.findById({ _id: id, userId: req.userId });
+        res.json(hotel);
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error fetching hotels" });
+    }
+}));
+router.put("/:hotelId", auth_1.default, upload.array("imageFiles"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const updatedHotel = req.body;
+        updatedHotel.lastUploaded = new Date();
+        const hotel = yield hotel_1.default.findOneAndUpdate({
+            _id: req.params.hotelId,
+            userId: req.userId,
+        }, updatedHotel, { new: true });
+        if (!hotel) {
+            return res.status(404).json({ message: "Hotel not found" });
+        }
+        const files = req.files;
+        const updatedImageUrls = yield uploadImages(files);
+        hotel.imageUrls = [
+            ...updatedImageUrls,
+            ...(updatedHotel.imageUrls || []),
+        ];
+        yield hotel.save();
+        res.status(201).json(hotel);
+    }
+    catch (error) {
+        res.status(500).json({ message: "Something went throw" });
+    }
+}));
+function uploadImages(imageFiles) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const uplaodPromises = imageFiles.map((image) => __awaiter(this, void 0, void 0, function* () {
+            const b64 = Buffer.from(image.buffer).toString("base64");
+            let dataUrl = "data:" + image.mimetype + ";base64," + b64;
+            const res = yield cloudinary_1.default.v2.uploader.upload(dataUrl);
+            return res.url;
+        }));
+        const imageUrls = yield Promise.all(uplaodPromises);
+        return imageUrls;
+    });
+}
 exports.default = router;

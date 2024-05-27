@@ -38,6 +38,9 @@ app.get("*", (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
 });
 
+// app.get("*", function (req, res) {
+//   res.status(404).send("what???");
+// });
 app.listen(7001, () => {
   console.log("Server is running on local host:7001");
 });
