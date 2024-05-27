@@ -8,8 +8,8 @@ const EditHotel = () => {
   const { hotelId } = useParams();
 
   const { data: hotel } = useQuery(
-    "fetchMyHotelsById",
-    () => apiClient.fetchMyHotelsById(hotelId || ""),
+    "fetchMyHotelById",
+    () => apiClient.fetchMyHotelById(hotelId || ""),
     {
       enabled: !!hotelId,
     }
@@ -29,6 +29,8 @@ const EditHotel = () => {
   const handleSave = (hotelFormData: FormData) => {
     mutate(hotelFormData);
   };
+  console.log("hotel", hotel);
+
   return (
     <>
       <ManagerHotelForm
