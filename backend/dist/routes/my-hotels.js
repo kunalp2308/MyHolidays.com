@@ -23,7 +23,7 @@ const storage = multer_1.default.memoryStorage();
 const upload = (0, multer_1.default)({
     storage: storage,
     limits: {
-        fieldSize: 5 * 1024 * 1024, //5MB
+        fileSize: 5 * 1024 * 1024, // 5MB
     },
 });
 router.post("/", auth_1.default, [
@@ -31,7 +31,7 @@ router.post("/", auth_1.default, [
     (0, express_validator_1.body)("city").notEmpty().withMessage("City is required"),
     (0, express_validator_1.body)("country").notEmpty().withMessage("Country is required"),
     (0, express_validator_1.body)("description").notEmpty().withMessage("Description is required"),
-    (0, express_validator_1.body)("type").notEmpty().withMessage("Type is required"),
+    (0, express_validator_1.body)("type").notEmpty().withMessage("Hotel type is required"),
     (0, express_validator_1.body)("pricePerNight")
         .notEmpty()
         .isNumeric()
@@ -44,22 +44,17 @@ router.post("/", auth_1.default, [
     try {
         const imageFiles = req.files;
         const newHotel = req.body;
-        //1.upload the image to cloudnary
         const imageUrls = yield uploadImages(imageFiles);
-        // if upload was sucessfull add the nurl to the new Hotel
         newHotel.imageUrls = imageUrls;
-        newHotel.lastUploaded = new Date();
+        newHotel.lastUpdated = new Date();
         newHotel.userId = req.userId;
-        //save the new hotel in our database
         const hotel = new hotel_1.default(newHotel);
         yield hotel.save();
-        res.status(200).send(hotel);
+        res.status(201).send(hotel);
     }
-    catch (error) {
-        console.log("Error creating hotel: ", error);
-        res.status(500).json({
-            message: "Somthing went wrong",
-        });
+    catch (e) {
+        console.log(e);
+        res.status(500).json({ message: "Something went wrong" });
     }
 }));
 router.get("/", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -74,7 +69,10 @@ router.get("/", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, 
 router.get("/:id", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id.toString();
     try {
-        const hotel = yield hotel_1.default.findById({ _id: id, userId: req.userId });
+        const hotel = yield hotel_1.default.findOne({
+            _id: id,
+            userId: req.userId,
+        });
         res.json(hotel);
     }
     catch (error) {
@@ -84,7 +82,7 @@ router.get("/:id", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 
 router.put("/:hotelId", auth_1.default, upload.array("imageFiles"), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const updatedHotel = req.body;
-        updatedHotel.lastUploaded = new Date();
+        updatedHotel.lastUpdated = new Date();
         const hotel = yield hotel_1.default.findOneAndUpdate({
             _id: req.params.hotelId,
             userId: req.userId,
@@ -107,13 +105,13 @@ router.put("/:hotelId", auth_1.default, upload.array("imageFiles"), (req, res) =
 }));
 function uploadImages(imageFiles) {
     return __awaiter(this, void 0, void 0, function* () {
-        const uplaodPromises = imageFiles.map((image) => __awaiter(this, void 0, void 0, function* () {
+        const uploadPromises = imageFiles.map((image) => __awaiter(this, void 0, void 0, function* () {
             const b64 = Buffer.from(image.buffer).toString("base64");
-            let dataUrl = "data:" + image.mimetype + ";base64," + b64;
-            const res = yield cloudinary_1.default.v2.uploader.upload(dataUrl);
+            let dataURI = "data:" + image.mimetype + ";base64," + b64;
+            const res = yield cloudinary_1.default.v2.uploader.upload(dataURI);
             return res.url;
         }));
-        const imageUrls = yield Promise.all(uplaodPromises);
+        const imageUrls = yield Promise.all(uploadPromises);
         return imageUrls;
     });
 }

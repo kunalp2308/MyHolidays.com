@@ -29,7 +29,6 @@ const EditHotel = () => {
   const handleSave = (hotelFormData: FormData) => {
     mutate(hotelFormData);
   };
-  console.log("hotel", hotel);
 
   return (
     <>

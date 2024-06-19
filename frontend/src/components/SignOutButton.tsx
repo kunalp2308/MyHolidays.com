@@ -19,7 +19,6 @@ const SignOutButton = () => {
     },
   });
   const handleClick = () => {
-    console.log("Hi There");
     mutation.mutate();
   };
   return (

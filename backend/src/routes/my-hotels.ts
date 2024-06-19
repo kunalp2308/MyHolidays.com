@@ -9,11 +9,10 @@ import { HotelType } from "../shared/types";
 const router = express.Router();
 
 const storage = multer.memoryStorage();
-
 const upload = multer({
   storage: storage,
   limits: {
-    fieldSize: 5 * 1024 * 1024, //5MB
+    fileSize: 5 * 1024 * 1024, // 5MB
   },
 });
 
@@ -25,7 +24,7 @@ router.post(
     body("city").notEmpty().withMessage("City is required"),
     body("country").notEmpty().withMessage("Country is required"),
     body("description").notEmpty().withMessage("Description is required"),
-    body("type").notEmpty().withMessage("Type is required"),
+    body("type").notEmpty().withMessage("Hotel type is required"),
     body("pricePerNight")
       .notEmpty()
       .isNumeric()
@@ -40,23 +39,20 @@ router.post(
     try {
       const imageFiles = req.files as Express.Multer.File[];
       const newHotel: HotelType = req.body;
-      //1.upload the image to cloudnary
 
       const imageUrls = await uploadImages(imageFiles);
-      // if upload was sucessfull add the nurl to the new Hotel
+
       newHotel.imageUrls = imageUrls;
-      newHotel.lastUploaded = new Date();
+      newHotel.lastUpdated = new Date();
       newHotel.userId = req.userId;
 
-      //save the new hotel in our database
       const hotel = new Hotel(newHotel);
       await hotel.save();
-      res.status(200).send(hotel);
-    } catch (error) {
-      console.log("Error creating hotel: ", error);
-      res.status(500).json({
-        message: "Somthing went wrong",
-      });
+
+      res.status(201).send(hotel);
+    } catch (e) {
+      console.log(e);
+      res.status(500).json({ message: "Something went wrong" });
     }
   }
 );
@@ -69,15 +65,20 @@ router.get("/", verifyToken, async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error fetching hotels" });
   }
 });
+
 router.get("/:id", verifyToken, async (req: Request, res: Response) => {
   const id = req.params.id.toString();
   try {
-    const hotel = await Hotel.findById({ _id: id, userId: req.userId });
+    const hotel = await Hotel.findOne({
+      _id: id,
+      userId: req.userId,
+    });
     res.json(hotel);
   } catch (error) {
     res.status(500).json({ message: "Error fetching hotels" });
   }
 });
+
 router.put(
   "/:hotelId",
   verifyToken,
@@ -85,7 +86,7 @@ router.put(
   async (req: Request, res: Response) => {
     try {
       const updatedHotel: HotelType = req.body;
-      updatedHotel.lastUploaded = new Date();
+      updatedHotel.lastUpdated = new Date();
 
       const hotel = await Hotel.findOneAndUpdate(
         {
@@ -117,14 +118,14 @@ router.put(
 );
 
 async function uploadImages(imageFiles: Express.Multer.File[]) {
-  const uplaodPromises = imageFiles.map(async (image) => {
+  const uploadPromises = imageFiles.map(async (image) => {
     const b64 = Buffer.from(image.buffer).toString("base64");
-    let dataUrl = "data:" + image.mimetype + ";base64," + b64;
-    const res = await cloudinary.v2.uploader.upload(dataUrl);
+    let dataURI = "data:" + image.mimetype + ";base64," + b64;
+    const res = await cloudinary.v2.uploader.upload(dataURI);
     return res.url;
   });
 
-  const imageUrls = await Promise.all(uplaodPromises);
+  const imageUrls = await Promise.all(uploadPromises);
   return imageUrls;
 }
 
